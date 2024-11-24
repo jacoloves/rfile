@@ -32,7 +32,7 @@ fn read_and_print_csv(file_path: String) -> Result<(), Box<dyn Error>> {
 
     let headers = rdr.headers()?;
     let header_row = Row::new(headers.iter().map(|h| Cell::new(h)).collect());
-    table.add_row(header_row.clone());
+    //table.add_row(header_row.clone());
 
     for res in rdr.records() {
         let record = res?;
@@ -58,7 +58,7 @@ fn read_and_print_csv(file_path: String) -> Result<(), Box<dyn Error>> {
 
     let total_rows = table.len();
     let mut current_row = 0;
-    let page_size = 10;
+    let page_size = 30;
 
     loop {
         execute!(stdout, terminal::Clear(ClearType::All), MoveTo(0, 0))?;
