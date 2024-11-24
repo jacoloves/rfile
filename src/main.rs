@@ -17,22 +17,48 @@ use prettytable::{Cell, Row, Table};
 use termios::{tcsetattr, Termios, ECHO, ICANON, OPOST, TCSANOW};
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // get file path
     let file_path = get_file_path()?;
 
-    read_and_print_csv(file_path)?;
+    // read csv file
+    let (header_row, table) = read_csv_to_table(&file_path)?;
+
+    // initialize terminal
+    let originale_termios = init_terminal()?;
+
+    // set page size
+    let page_size = 30;
+
+    // display table with paging
+    let display_result = display_table(header_row, &table, page_size);
+
+    // reset terminal
+    reset_terminal(&originale_termios)?;
+
+    // propagate error
+    display_result?;
 
     Ok(())
 }
 
-fn read_and_print_csv(file_path: String) -> Result<(), Box<dyn Error>> {
+fn get_file_path() -> Result<String, Box<dyn Error>> {
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() < 2 {
+        return Err("Usage: csv_tool <file_path>".into());
+    }
+
+    Ok(args[1].clone())
+}
+
+fn read_csv_to_table(file_path: &str) -> Result<(Row, Table), Box<dyn Error>> {
     let file = File::open(file_path)?;
     let mut rdr = ReaderBuilder::new().from_reader(file);
 
-    let mut table = Table::new();
-
     let headers = rdr.headers()?;
     let header_row = Row::new(headers.iter().map(|h| Cell::new(h)).collect());
-    //table.add_row(header_row.clone());
+
+    let mut table = Table::new();
 
     for res in rdr.records() {
         let record = res?;
@@ -40,7 +66,10 @@ fn read_and_print_csv(file_path: String) -> Result<(), Box<dyn Error>> {
         table.add_row(record_row);
     }
 
-    // get terminal settings for restore
+    Ok((header_row, table))
+}
+
+fn init_terminal() -> Result<Termios, Box<dyn Error>> {
     let stdin_fd = std::io::stdin().as_raw_fd();
     let original_termios = Termios::from_fd(stdin_fd)?;
     let mut raw_termios = original_termios;
@@ -53,12 +82,22 @@ fn read_and_print_csv(file_path: String) -> Result<(), Box<dyn Error>> {
     raw_termios.c_oflag |= OPOST;
     tcsetattr(stdin_fd, TCSANOW, &raw_termios)?;
 
+    Ok(original_termios)
+}
+
+fn reset_terminal(original_termios: &Termios) -> Result<(), Box<dyn Error>> {
+    let stdin_fd = std::io::stdin().as_raw_fd();
+    tcsetattr(stdin_fd, TCSANOW, original_termios)?;
+    terminal::disable_raw_mode()?;
+    Ok(())
+}
+
+fn display_table(header_row: Row, table: &Table, page_size: usize) -> Result<(), Box<dyn Error>> {
     let mut stdout = stdout();
     execute!(stdout, terminal::Clear(ClearType::All))?;
 
     let total_rows = table.len();
     let mut current_row = 0;
-    let page_size = 30;
 
     loop {
         execute!(stdout, terminal::Clear(ClearType::All), MoveTo(0, 0))?;
@@ -81,7 +120,7 @@ fn read_and_print_csv(file_path: String) -> Result<(), Box<dyn Error>> {
             println!("End of file");
         }
 
-        // wati for key input
+        // wait for key input
         if event::poll(std::time::Duration::from_millis(500))? {
             if let Event::Key(key_event) = event::read()? {
                 match key_event.code {
@@ -106,19 +145,5 @@ fn read_and_print_csv(file_path: String) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // reset terminal
-    tcsetattr(stdin_fd, TCSANOW, &original_termios)?;
-    terminal::disable_raw_mode()?;
-    execute!(stdout, terminal::Clear(ClearType::All))?;
     Ok(())
-}
-
-fn get_file_path() -> Result<String, Box<dyn Error>> {
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() < 2 {
-        return Err("Usage: csv_tool <file_path>".into());
-    }
-
-    Ok(args[1].clone())
 }
