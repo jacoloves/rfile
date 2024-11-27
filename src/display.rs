@@ -2,9 +2,9 @@ use crossterm::{
     cursor::MoveTo,
     event::{self, Event, KeyCode},
     execute,
-    terminal::{self, ClearType},
+    terminal::{self, size, ClearType},
 };
-use prettytable::{Row, Table};
+use prettytable::{format::{FormatBuilder, LinePosition, LineSeparator}, Row, Table};
 use std::error::Error;
 use std::io::{stdout, Write};
 
@@ -20,9 +20,25 @@ pub fn display_table(
     let mut current_row = 0;
 
     loop {
+        let (term_width, _) = size()?;
+        
         execute!(stdout, terminal::Clear(ClearType::All), MoveTo(0, 0))?;
         let mut page_table = Table::new();
 
+        // setting table format
+        use prettytable::format::{FormatBuilder, LinePosition, LineSeparator};
+
+        let format = FormatBuilder::new()
+            .column_separator('|')
+            .borders('|')
+            .separator(LinePosition::Top, LineSeparator::new('-', '+', '+', '+'))
+            .separator(LinePosition::Title, LineSeparator::new('-', '+', '+', '+'))
+            .separator(LinePosition::Bottom, LineSeparator::new('-', '+', '+', '+'))
+            .padding(1, 1)
+            .build();
+        page_table.set_format(format);
+
+        // add header row
         page_table.add_row(header_row.clone());
 
         for i in 0..page_size {
