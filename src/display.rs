@@ -32,7 +32,7 @@ pub fn display_table(
             .column_separator('|')
             .borders('|')
             .separator(LinePosition::Top, LineSeparator::new('-', '+', '+', '+'))
-            .separator(LinePosition::Title, LineSeparator::new('-', '+', '+', '+'))
+            .separator(LinePosition::Title, LineSeparator::new('=', '+', '+', '+'))
             .separator(LinePosition::Bottom, LineSeparator::new('-', '+', '+', '+'))
             .padding(1, 1)
             .build();
