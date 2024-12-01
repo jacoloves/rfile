@@ -4,7 +4,6 @@ mod json_reader;
 mod utils;
 
 use csv_reader::read_csv_to_table;
-use display::display_table;
 use json_reader::read_json_to_table;
 use std::{error::Error, path::Path};
 use utils::get_file_path;
@@ -26,11 +25,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         _ => return Err("Unsupported file extension. Please provide CSV or JSON file.".into()),
     };
 
-    // setting page size
-    let page_size = 30;
-
-    // disolay result
-    display_table(&table, page_size)?;
+    // display table
+    table.printstd();
 
     Ok(())
 }

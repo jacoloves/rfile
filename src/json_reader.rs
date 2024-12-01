@@ -1,13 +1,12 @@
-use crate::utils::get_terminal_width;
-use crate::utils::wrap_text;
+use crate::utils::truncate_text;
 use prettytable::{Cell, Row, Table};
 use serde_json::Value;
 use std::error::Error;
 use std::fs::File;
 
 pub fn read_json_to_table(file_path: &str) -> Result<Table, Box<dyn Error>> {
-    // calculate max width for wrapping text
-    let max_cell_width = get_terminal_width().saturating_sub(4);
+    // setting max width for cells
+    let max_cell_width = 30;
 
     // oepn json file and parse json data
     let file = File::open(file_path)?;
@@ -31,10 +30,8 @@ pub fn read_json_to_table(file_path: &str) -> Result<Table, Box<dyn Error>> {
         let header_cells = headers
             .iter()
             .map(|h| {
-                let wrapped_text = wrap_text(h, max_cell_width);
-                let cell = Cell::new(&wrapped_text);
-                cell.clone().style_spec("FW");
-                cell
+                let truncated_text = truncate_text(h, max_cell_width);
+                Cell::new(&truncated_text)
             })
             .collect();
         // let header_row = Row::new(headers.iter().map(|h| Cell::new(h)).collect());
@@ -55,10 +52,8 @@ pub fn read_json_to_table(file_path: &str) -> Result<Table, Box<dyn Error>> {
                             Value::Bool(b) => b.to_string(),
                             _ => "".to_string(),
                         };
-                        let wrapped_text = wrap_text(&cell_text, max_cell_width);
-                        let cell = Cell::new(&wrapped_text);
-                        cell.clone().style_spec("FW");
-                        cell
+                        let truncated_text = truncate_text(&cell_text, max_cell_width);
+                        Cell::new(&truncated_text)
                     })
                     .collect();
                 table.add_row(Row::new(cells));

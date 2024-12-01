@@ -1,28 +1,36 @@
-use crate::utils::get_terminal_width;
-use crate::utils::wrap_text;
+use crate::utils::truncate_text;
 use csv::ReaderBuilder;
 use prettytable::{Cell, Row, Table};
 use std::error::Error;
 use std::fs::File;
 
 pub fn read_csv_to_table(file_path: &str) -> Result<Table, Box<dyn Error>> {
-    // calculate max width for wrapping text
-    let max_cell_width = get_terminal_width().saturating_sub(4);
+    // setting max width for cells
+    let max_cell_width = 30;
 
     let file = File::open(file_path)?;
     let mut rdr = ReaderBuilder::new().from_reader(file);
 
     let mut table = Table::new();
 
+    // setting table format
+    // let format = FormatBuilder::new()
+    //     .column_separator('|')
+    //     .borders('|')
+    //     .separator(LinePosition::Top, LineSeparator::new('-', '+', '+', '+'))
+    //     .separator(LinePosition::Title, LineSeparator::new('=', '+', '+', '+'))
+    //     .separator(LinePosition::Bottom, LineSeparator::new('-', '+', '+', '+'))
+    //     .padding(1, 1)
+    //     .build();
+    // table.set_format(format);
+
     // add header row
     let headers = rdr.headers()?;
     let header_cells = headers
         .iter()
         .map(|h| {
-            let wrappded_text = wrap_text(h, max_cell_width);
-            let cell = Cell::new(&wrappded_text);
-            cell.clone().style_spec("FW");
-            cell
+            let turancated_text = truncate_text(h, max_cell_width);
+            Cell::new(&turancated_text)
         })
         .collect();
     // let header_row = Row::new(headers.iter().map(|h| Cell::new(h)).collect());
@@ -35,10 +43,8 @@ pub fn read_csv_to_table(file_path: &str) -> Result<Table, Box<dyn Error>> {
         let cells = record
             .iter()
             .map(|r| {
-                let wrappded_text = wrap_text(r, max_cell_width);
-                let cell = Cell::new(&wrappded_text);
-                cell.clone().style_spec("FW");
-                cell
+                let truncated_text = truncate_text(r, max_cell_width);
+                Cell::new(&truncated_text)
             })
             .collect();
         // let row = Row::new(record.iter().map(|r| Cell::new(r)).collect());
